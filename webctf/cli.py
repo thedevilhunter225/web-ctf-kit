@@ -122,6 +122,11 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--input", required=True, help="Path to findings.json")
     report.add_argument("--no-color", action="store_true")
 
+    gui = sub.add_parser("gui", help="Launch the interactive terminal UI (menu-driven)")
+    gui.add_argument("--no-color", action="store_true")
+    tui = sub.add_parser("tui", help="Alias of gui")
+    tui.add_argument("--no-color", action="store_true")
+
     sub.add_parser("doctor", help="Check the environment and optional dependencies")
 
     plugins = sub.add_parser("plugins", help="List available scanner plugins")
@@ -217,6 +222,9 @@ def main(argv: list[str] | None = None) -> int:
             from .reporting.json_report import load_result
             print_result_dict(load_result(args.input), no_color=args.no_color)
             return 0
+        if args.command in ("gui", "tui"):
+            from .tui import run_tui
+            return run_tui(no_color=args.no_color)
         if args.command == "doctor":
             return _doctor()
         if args.command == "plugins":

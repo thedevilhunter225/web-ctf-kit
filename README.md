@@ -70,6 +70,19 @@ same-origin crawl & input discovery → deterministic planner → modular scanne
 bounded, read-only flag retrieval → report. `--ack-authorized` is required because
 `solve`/`scan` send active probes.
 
+## Terminal UI (no flags to memorize)
+
+Prefer menus? Launch the interactive terminal UI:
+
+```bash
+webctf gui          # (alias: webctf tui)
+```
+
+It guides you through a mode (solve / scan / recon / analyze / admin-bot / JWT),
+confirms authorization before any active probing, shows a live progress line while
+it runs, prints the flag in a banner, and can save the report. Standard library
+only — nothing extra to install.
+
 ## Commands
 
 | Command | Purpose | Network |
@@ -84,6 +97,7 @@ bounded, read-only flag retrieval → report. `--ack-authorized` is required bec
 | `webctf bot --url URL ... --ack-authorized` | Submit one URL to an admin `/report` endpoint | challenge only |
 | `webctf bot --url URL --capture ... --ack-authorized` | Auto cookie-exfil: local listener + XSS via `/report` → prints the flag | challenge only |
 | `webctf jwt TOKEN [--forge-none\|--crack\|--secret S]` | Decode / forge / crack a JWT (offline) | none |
+| `webctf gui` (alias `tui`) | Interactive menu-driven terminal UI | depends on action |
 
 Common flags: `--max-pages`, `--max-tests`, `--max-time`, `--timeout`, `--delay`,
 `--cookie`, `--header NAME:VALUE`, `--guess`, `--only a,b` / `--skip a,b`,

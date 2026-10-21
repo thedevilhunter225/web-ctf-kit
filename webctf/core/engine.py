@@ -23,8 +23,13 @@ from .evidence import Result
 from .target import Transport, normalize
 
 
-def run(url: str, config: RunConfig, source: str | None = None) -> Result:
-    """Run the full pipeline and return a merged :class:`Result`."""
+def run(url: str, config: RunConfig, source: str | None = None,
+        result: Result | None = None) -> Result:
+    """Run the full pipeline and return a merged :class:`Result`.
+
+    If *result* is provided it is filled in place (so a caller — e.g. the TUI —
+    can watch findings/requests accumulate live on another thread).
+    """
     config = config.clamped()
     patterns = compile_patterns(config.flag_regex, config.flag_only)
     deadline = time.monotonic() + config.max_time if config.max_time else None
@@ -32,7 +37,11 @@ def run(url: str, config: RunConfig, source: str | None = None) -> Result:
     transport = Transport(url, timeout=config.timeout, cookie=config.cookie,
                           headers=config.headers, delay=config.delay)
     mode = "solve" if (config.active and config.solve) else ("scan" if config.active else "recon")
-    result = Result(target=transport.target, mode=mode)
+    if result is None:
+        result = Result(target=transport.target, mode=mode)
+    else:
+        result.target = transport.target
+        result.mode = mode
 
     source_frameworks: list[str] = []
     if source:
