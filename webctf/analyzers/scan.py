@@ -15,10 +15,12 @@ from . import framework
 from .archive import iter_sources
 from .docker import analyze_compose, analyze_dockerfile
 from .js_analysis import analyze_js
+from .php_analysis import analyze_php, php_targets
 from .python_ast import analyze_python
 from .static_rules import COMPILED, WITHHELD
 
 _JS_SUFFIXES = (".js", ".mjs", ".cjs", ".ts", ".jsx", ".tsx", ".vue")
+_PHP_SUFFIXES = (".php", ".phtml", ".php5", ".inc")
 _MAX_LINE = 2000
 
 
@@ -49,6 +51,9 @@ def analyze(path: str, flag_regex: str = "", flag_only: bool = False) -> Result:
         elif name.lower().endswith(_JS_SUFFIXES):
             for f in analyze_js(name, body):
                 result.add_finding(f)
+        elif name.lower().endswith(_PHP_SUFFIXES):
+            for f in analyze_php(name, body):
+                result.add_finding(f)
         if base == "dockerfile" or base.endswith(".dockerfile"):
             for f in analyze_dockerfile(name, body):
                 result.add_finding(f)
@@ -73,6 +78,9 @@ def analyze(path: str, flag_regex: str = "", flag_only: bool = False) -> Result:
         "config_files": info["config_files"],
         "note": "Static findings are leads, not proof; confirm reachability.",
     }
+    php = php_targets(files)
+    if php["gadgets"] or php["upload_fields"] or php["has_phar_filter"]:
+        result.metadata["php"] = php
     return result
 
 

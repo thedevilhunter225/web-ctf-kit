@@ -19,6 +19,8 @@ _SIGNS = [
     ("Rails", re.compile(r"Rails\.application|ActionController|config/routes\.rb"), "ruby"),
     ("Spring", re.compile(r"org\.springframework|@SpringBootApplication|@RestController"), "java"),
     ("Gin (Go)", re.compile(r"gin-gonic/gin|gin\.Default\("), "go"),
+    # Generic language markers (last, so specific frameworks above win first).
+    ("PHP", re.compile(r"<\?php|\$_(?:GET|POST|REQUEST|SERVER|FILES)\b"), "php"),
 ]
 
 _JS_ROUTE = re.compile(r"""\b(?:app|router)\.(get|post|put|delete|patch|all)\s*\(\s*['"`]([^'"`]+)['"`]""")

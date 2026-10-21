@@ -5,7 +5,7 @@ can be added by subclassing :class:`~webctf.scanners.base.Scanner` and applying
 the :func:`~webctf.scanners.base.register` decorator (see ``docs``/README).
 """
 from . import (  # noqa: F401
-    cmdi, crlf, disclosure, lfi, proto_pollution, redirect, sqli, ssrf, ssti, xss,
+    cmdi, crlf, disclosure, lfi, phar_scan, proto_pollution, redirect, sqli, ssrf, ssti, xss,
 )
 from .base import (
     Budget, ScanContext, Scanner, all_scanners, get_scanner, register,

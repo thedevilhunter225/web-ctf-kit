@@ -130,6 +130,11 @@ find encoded flags, and filters obvious placeholders (`flag{...}`, `flag{FLAG}`)
   in, pollutes an access gadget (`role`/`isAdmin`/…) via a merge or JSON-string
   interpolation sink, then reads the flag from the admin route. Runs under
   `--solve` and only against a JS stack or when source flags the sink.
+- PHAR deserialization -> RCE (PHP) — extracts a POP gadget + upload/phar sink
+  from source, builds a GIF/PHAR polyglot carrying the serialized gadget, uploads
+  it as an image, triggers `phar://` (defeating a case-sensitive blacklist with
+  `PHAR://`), and reads the flag from the command output. White-box (needs source
+  for the gadget); runs under `--solve`.
 
 **Detection (high-signal, no automatic exploitation):**
 
@@ -156,6 +161,9 @@ logic. These are surfaced as *leads*; the tool never fabricates success.
   positives than a line regex.
 - JS sink detection incl. **unsafe recursive `merge` (prototype pollution)** and
   `JSON.parse` built from string interpolation.
+- PHP sink detection incl. `unserialize`/`phar://` sinks, insecure uploads, and
+  **POP gadgets** (magic methods that call a property), with gadget extraction for
+  the phar auto-exploit.
 - Dockerfile / docker-compose secrets & ports (values withheld), config discovery.
 
 Source findings **drive the planner**: a confirmed SSTI sink in the source raises
@@ -183,8 +191,8 @@ webctf/
 ├── core/                  # config, target (scoped transport), evidence, planner, engine
 ├── recon/                 # fingerprint, crawler, HTML parser, path discovery
 ├── analyzers/             # archive, static rules, python AST taint, JS analysis, docker, scan
-├── scanners/              # base + registry; xss, sqli, ssti, lfi, cmdi, redirect, crlf, ssrf, disclosure, pp
-├── exploits/              # ssti_rce, lfi_read, sqli_extract, cmdi_read, proto_pollute, jwt_forge
+├── scanners/              # base + registry; xss, sqli, ssti, lfi, cmdi, redirect, crlf, ssrf, disclosure, pp, phar
+├── exploits/              # ssti_rce, lfi_read, sqli_extract, cmdi_read, proto_pollute, phar_deser, jwt_forge
 ├── payloads/              # xss, ssti, lfi, sqli, cmdi payload sets (data)
 ├── flags/                 # recognition + nested-decoding engine
 ├── browser/              # admin-bot report workflow + optional Playwright driver
@@ -223,7 +231,7 @@ on `127.0.0.1` only) let the solver be exercised end to end:
 python3 -m unittest discover -s tests -v
 ```
 
-The suite (58 tests) covers XSS (blacklist bypass), SSTI (stdlib + real Jinja2),
+The suite (69 tests) covers XSS (blacklist bypass), SSTI (stdlib + real Jinja2),
 SQLi (UNION extraction), LFI, command injection, open redirect, CRLF, blind
 boolean SQLi, disclosure, source AST taint, prototype-pollution detection **and
 auto-exploitation** (register/login/pollute/flag), the admin-bot cookie-exfil

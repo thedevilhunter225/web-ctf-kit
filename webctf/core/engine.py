@@ -52,6 +52,8 @@ def run(url: str, config: RunConfig, source: str | None = None,
             result.add_flag(flag)
         result.visited.extend("source:" + v for v in src.visited)
         result.metadata["source"] = src.metadata
+        if src.metadata.get("php"):
+            result.metadata["php"] = src.metadata["php"]  # lift for the phar exploit
         source_frameworks = list(src.metadata.get("frameworks", []))
 
     # --- recon ---------------------------------------------------------
@@ -99,12 +101,18 @@ def run(url: str, config: RunConfig, source: str | None = None,
 
         # --- solve (bounded, read-only flag retrieval) -----------------
         if config.solve and not _expired(deadline):
-            from ..exploits import run_pp_exploit, run_solve
+            from ..exploits import run_pp_exploit, run_phar_exploit, run_solve
             if ctx.solve_targets:
                 run_solve(ctx)
-            best = result.best_flag()
-            if not (best and best.verified) and not _expired(deadline):
+
+            def _have_flag():
+                b = result.best_flag()
+                return bool(b and b.verified)
+
+            if not _have_flag() and not _expired(deadline):
                 run_pp_exploit(ctx)
+            if not _have_flag() and not _expired(deadline):
+                run_phar_exploit(ctx)
 
     result.requests = transport.count
     result.metadata.update({

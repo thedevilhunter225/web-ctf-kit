@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import http.cookiejar
 import json as _json
+import secrets
 import time
 from dataclasses import dataclass, field
 from typing import Mapping
@@ -47,6 +48,28 @@ def normalize(url: str) -> str:
     """Drop the fragment; keep everything else intact."""
     parsed = urlparse(url)
     return urlunparse(parsed._replace(fragment=""))
+
+
+def _multipart(fields: dict, files: dict) -> tuple[str, bytes]:
+    """Build a multipart/form-data body. *files* maps name -> (filename, content, ctype)."""
+    boundary = "----WebCTFKit" + secrets.token_hex(12)
+    sep = ("--" + boundary).encode()
+    out = bytearray()
+    for name, value in fields.items():
+        out += sep + b"\r\n"
+        out += b'Content-Disposition: form-data; name="' + str(name).encode() + b'"\r\n\r\n'
+        out += str(value).encode() + b"\r\n"
+    for name, spec in files.items():
+        filename, content, ctype = spec
+        if isinstance(content, str):
+            content = content.encode("latin-1", "replace")
+        out += sep + b"\r\n"
+        out += (b'Content-Disposition: form-data; name="' + str(name).encode()
+                + b'"; filename="' + str(filename).encode() + b'"\r\n')
+        out += b"Content-Type: " + str(ctype).encode() + b"\r\n\r\n"
+        out += content + b"\r\n"
+    out += sep + b"--\r\n"
+    return boundary, bytes(out)
 
 
 @dataclass
@@ -101,17 +124,21 @@ class Transport:
 
     def request(self, url: str, method: str = "GET",
                 data: dict[str, str] | None = None,
-                json: object | None = None) -> Response:
+                json: object | None = None,
+                files: dict | None = None) -> Response:
         absolute = normalize(urljoin(self.target, url))
         if not in_scope(self.target, absolute):
             raise ValueError("Out-of-scope URL blocked: " + absolute)
         method = method.upper()
-        if json is not None:
-            method = "POST"  # a JSON body implies POST
+        if json is not None or files is not None:
+            method = "POST"  # a JSON/multipart body implies POST
         if method not in ("GET", "POST"):
             raise ValueError("Only GET and POST are supported")
         body_ctype = ""
-        if json is not None:
+        if files is not None:
+            boundary, values = _multipart(data or {}, files)
+            body_ctype = "multipart/form-data; boundary=" + boundary
+        elif json is not None:
             values = _json.dumps(json).encode("utf-8")
             body_ctype = "application/json"
         elif method == "POST":
