@@ -71,6 +71,10 @@ def run(url: str, config: RunConfig, source: str | None = None) -> Result:
     ctx = ScanContext(transport, result, config, budget, patterns)
     scanners = select(config)
     all_frameworks = sorted(set(fp.frameworks) | set(source_frameworks))
+    # Make stack info available to scanners/exploits during the run (not just in
+    # the final report), e.g. so the PP exploit knows it's a JS target.
+    result.metadata["frameworks"] = all_frameworks
+    result.metadata["stack"] = fp.summary()
     site_scanners, jobs = planner.build_plan(result, all_frameworks, scanners, config)
 
     if config.active:
@@ -85,9 +89,13 @@ def run(url: str, config: RunConfig, source: str | None = None) -> Result:
                 job.scanner.scan(job.param, ctx)
 
         # --- solve (bounded, read-only flag retrieval) -----------------
-        if config.solve and ctx.solve_targets and not _expired(deadline):
-            from ..exploits import run_solve
-            run_solve(ctx)
+        if config.solve and not _expired(deadline):
+            from ..exploits import run_pp_exploit, run_solve
+            if ctx.solve_targets:
+                run_solve(ctx)
+            best = result.best_flag()
+            if not (best and best.verified) and not _expired(deadline):
+                run_pp_exploit(ctx)
 
     result.requests = transport.count
     result.metadata.update({

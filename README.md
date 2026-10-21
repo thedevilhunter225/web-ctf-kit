@@ -112,13 +112,16 @@ find encoded flags, and filters obvious placeholders (`flag{...}`, `flag{FLAG}`)
   flag-path reads and `php://filter` source disclosure.
 - OS command injection — `echo`-marker detection through shell separators;
   read-only `cat` flag retrieval.
+- Prototype pollution -> privilege escalation (JS/Node) — registers a user, logs
+  in, pollutes an access gadget (`role`/`isAdmin`/…) via a merge or JSON-string
+  interpolation sink, then reads the flag from the admin route. Runs under
+  `--solve` and only against a JS stack or when source flags the sink.
 
 **Detection (high-signal, no automatic exploitation):**
 
 - Reflected XSS, including tag/attribute **blacklist-bypass** probing.
 - Open redirect, CRLF / HTTP response-header injection.
 - Source / backup / `.git` / `.env` / DB-dump / archive disclosure.
-- Prototype-pollution gadgets and JSON-from-interpolation (white-box; see below).
 - JWT `alg:none` / weak-secret (offline forge & crack via `webctf jwt`).
 
 **Experimental / partial:** SSRF (scope-safe reflection heuristic; no external
@@ -166,8 +169,8 @@ webctf/
 ├── core/                  # config, target (scoped transport), evidence, planner, engine
 ├── recon/                 # fingerprint, crawler, HTML parser, path discovery
 ├── analyzers/             # archive, static rules, python AST taint, JS analysis, docker, scan
-├── scanners/              # base + registry; xss, sqli, ssti, lfi, cmdi, redirect, crlf, ssrf, disclosure
-├── exploits/              # ssti_rce, lfi_read, sqli_extract, cmdi_read, jwt_forge (+ run_solve)
+├── scanners/              # base + registry; xss, sqli, ssti, lfi, cmdi, redirect, crlf, ssrf, disclosure, pp
+├── exploits/              # ssti_rce, lfi_read, sqli_extract, cmdi_read, proto_pollute, jwt_forge
 ├── payloads/              # xss, ssti, lfi, sqli, cmdi payload sets (data)
 ├── flags/                 # recognition + nested-decoding engine
 ├── browser/              # admin-bot report workflow + optional Playwright driver
@@ -206,11 +209,12 @@ on `127.0.0.1` only) let the solver be exercised end to end:
 python3 -m unittest discover -s tests -v
 ```
 
-The suite covers XSS (blacklist bypass), SSTI (stdlib + real Jinja2), SQLi (UNION
-extraction), LFI, command injection, open redirect, CRLF, blind boolean SQLi,
-disclosure, source AST taint, prototype-pollution detection, the flag engine, the
-CLI, and the admin-bot workflow — asserting *actual flag extraction*, not just
-alerts.
+The suite (58 tests) covers XSS (blacklist bypass), SSTI (stdlib + real Jinja2),
+SQLi (UNION extraction), LFI, command injection, open redirect, CRLF, blind
+boolean SQLi, disclosure, source AST taint, prototype-pollution detection **and
+auto-exploitation** (register/login/pollute/flag), the admin-bot cookie-exfil
+capture, the flag engine, and the CLI — asserting *actual flag extraction*, not
+just alerts.
 
 ## No AI
 

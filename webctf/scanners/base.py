@@ -75,13 +75,17 @@ class ScanContext:
         return self.transport.request(url)
 
     def fetch(self, path: str, *, category: str, method: str = "GET",
-              data: dict[str, str] | None = None) -> Response | None:
-        """Budget-limited raw request for site-scoped scanners (e.g. disclosure)."""
+              data: dict[str, str] | None = None,
+              json: object | None = None) -> Response | None:
+        """Budget-limited raw request for site-scoped scanners and exploits.
+
+        Supports a JSON body via *json* (sets Content-Type: application/json).
+        """
         if not self.budget.allows():
             return None
         self.budget.performed += 1
         try:
-            resp = self.transport.request(path, method=method, data=data)
+            resp = self.transport.request(path, method=method, data=data, json=json)
         except (ConnectionError, ValueError) as exc:
             if len(self.result.errors) < 50:
                 self.result.errors.append(f"{method} {path}: {exc}")

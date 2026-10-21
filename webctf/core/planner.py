@@ -30,8 +30,8 @@ _FRAMEWORK_BOOST = {
     "tornado": {"ssti": 30},
     "php": {"lfi": 35, "sqli": 25, "disclosure": 15},
     "laravel": {"sqli": 20, "lfi": 15},
-    "express": {"ssrf": 20, "sqli": 15, "crlf": 10},
-    "node": {"ssrf": 20, "cmdi": 10},
+    "express": {"ssrf": 20, "sqli": 15, "crlf": 10, "pp": 30},
+    "node": {"ssrf": 20, "cmdi": 10, "pp": 30},
     "rails": {"sqli": 20},
 }
 
@@ -74,6 +74,9 @@ _SOURCE_BOOST = [
     ("crlf", {"crlf": 45}),
     ("header injection", {"crlf": 40}),
     ("filter", {"xss": 20}),
+    ("prototype pollution", {"pp": 60}),
+    ("json built from string", {"pp": 50}),
+    ("json injection", {"pp": 40}),
 ]
 
 

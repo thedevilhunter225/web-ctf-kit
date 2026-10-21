@@ -8,6 +8,7 @@ malicious challenge cannot make the tool reach out to an unrelated host.
 from __future__ import annotations
 
 import http.cookiejar
+import json as _json
 import time
 from dataclasses import dataclass, field
 from typing import Mapping
@@ -99,14 +100,25 @@ class Transport:
         self.count = 0
 
     def request(self, url: str, method: str = "GET",
-                data: dict[str, str] | None = None) -> Response:
+                data: dict[str, str] | None = None,
+                json: object | None = None) -> Response:
         absolute = normalize(urljoin(self.target, url))
         if not in_scope(self.target, absolute):
             raise ValueError("Out-of-scope URL blocked: " + absolute)
         method = method.upper()
+        if json is not None:
+            method = "POST"  # a JSON body implies POST
         if method not in ("GET", "POST"):
             raise ValueError("Only GET and POST are supported")
-        values = urlencode(data or {}).encode("utf-8") if method == "POST" else None
+        body_ctype = ""
+        if json is not None:
+            values = _json.dumps(json).encode("utf-8")
+            body_ctype = "application/json"
+        elif method == "POST":
+            values = urlencode(data or {}).encode("utf-8")
+            body_ctype = "application/x-www-form-urlencoded"
+        else:
+            values = None
         headers = {"User-Agent": USER_AGENT, "Accept": "text/html,*/*;q=0.8"}
         for k, v in self.headers.items():
             if not k.isascii() or any(x in k + v for x in "\r\n"):
@@ -116,8 +128,8 @@ class Transport:
             headers[k] = v
         if self.cookie:
             headers["Cookie"] = self.cookie
-        if method == "POST":
-            headers["Content-Type"] = "application/x-www-form-urlencoded"
+        if body_ctype:
+            headers["Content-Type"] = body_ctype
         req = Request(absolute, data=values, headers=headers, method=method)
         if self.count and self.delay:
             time.sleep(self.delay)
